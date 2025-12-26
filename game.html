@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Shooter 🚀</title>
+<style>
+body {
+    margin: 0;
+    background-color: #000033;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+canvas {
+    display: block;
+    margin: 20px auto;
+    background-color: #000033;
+    border: 2px solid white;
+}
+#restartBtn {
+    display: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+<h1>Space Shooter 🚀</h1>
+<p>Use Left/Right arrow to move, Space to shoot!</p>
+<canvas id="gameCanvas" width="400" height="500"></canvas>
+<div id="scoreDisplay">Score: 0 | Level: 1</div>
+<button id="restartBtn" onclick="restartGame()">Restart Game</button>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreDiv = document.getElementById('scoreDisplay');
+const restartBtn = document.getElementById('restartBtn');
+
+const player = { x: 180, y: 450, width: 40, height: 20, speed: 15 };
+let bullets = [];
+let asteroids = [];
+let score = 0;
+let level = 1;
+let asteroidCount = 5;
+let gameOver = false;
+
+function initAsteroids() {
+    asteroids = [];
+    for(let i=0;i<asteroidCount;i++){
+        asteroids.push({
+            x: Math.random()*370,
+            y: Math.random()*-500,
+            width: 30,
+            height: 30,
+            speed: 2 + Math.random()*level
+        });
+    }
+}
+initAsteroids();
+
+function drawPlayer() {
+    ctx.fillStyle = "lime";
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+function drawBullets() {
+    ctx.fillStyle = "yellow";
+    bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.width,b.height));
+}
+function drawAsteroids() {
+    ctx.fillStyle = "red";
+    asteroids.forEach(a=>ctx.fillRect(a.x,a.y,a.width,a.height));
+}
+function drawScore() {
+    scoreDiv.innerText = `Score: ${score} | Level: ${level}`;
+}
+function drawGameOver() {
+    ctx.fillStyle = "white";
+    ctx.font = "30px Arial";
+    ctx.fillText("GAME OVER", 100, canvas.height/2);
+}
+
+function update() {
+    if(gameOver) return;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawPlayer();
+    drawBullets();
+    drawAsteroids();
+    drawScore();
+
+    bullets.forEach((b,i)=>{
+        b.y-=7;
+        if(b.y<0) bullets.splice(i,1);
+    });
+
+    asteroids.forEach(a=>{
+        a.y+=a.speed;
+
+        // Collision with bullet
+        bullets.forEach((b,bi)=>{
+            if(b.x<a.x+a.width && b.x+b.width>a.x && b.y<a.y+a.height && b.y+b.height>a.y){
+                bullets.splice(bi,1);
+                a.y = Math.random()*-500;
+                a.x = Math.random()*370;
+                score += 10;
+
+                if(score>0 && score%50===0){
+                    level++;
+                    asteroidCount++;
+                    initAsteroids();
+                }
+            }
+        });
+
+        // Missed asteroid
+        if(a.y>canvas.height){
+            score -= 10;
+            a.y = Math.random()*-500;
+            a.x = Math.random()*370;
+
+            if(score<0){
+                gameOver = true;
+                restartBtn.style.display="inline-block";
+                drawGameOver();
+            }
+        }
+    });
+
+    if(!gameOver) requestAnimationFrame(update);
+}
+
+// Controls
+document.addEventListener('keydown',(e)=>{
+    if(gameOver) return;
+    if(e.key==="ArrowLeft" && player.x>0) player.x-=player.speed;
+    if(e.key==="ArrowRight" && player.x+player.width<canvas.width) player.x+=player.speed;
+    if(e.key===" " || e.key==="Spacebar") bullets.push({x:player.x+player.width/2-2, y:player.y, width:4, height:10});
+});
+
+// Restart
+function restartGame(){
+    score=0;
+    level=1;
+    asteroidCount=5;
+    bullets=[];
+    gameOver=false;
+    restartBtn.style.display="none";
+    initAsteroids();
+    update();
+}
+
+update();
+</script>
+</body>
+</html>
